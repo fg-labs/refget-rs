@@ -34,7 +34,16 @@ pub struct SequenceServiceInfo {
 /// Details specific to refget service-info.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RefgetServiceDetails {
+    /// Whether circular sequence retrieval is supported.
     pub circular_supported: bool,
+    /// Supported hash algorithms (e.g. `["md5", "ga4gh"]`).
     pub algorithms: Vec<String>,
+    /// Supported identifier types (e.g. `["ga4gh", "md5"]`).
     pub identifier_types: Vec<String>,
+    /// Maximum length of a subsequence request. 0 means no limit.
+    #[serde(default)]
+    pub subsequence_limit: u64,
+    /// API versions supported by this server (e.g. `["2.0.0"]`).
+    #[serde(default)]
+    pub supported_api_versions: Vec<String>,
 }

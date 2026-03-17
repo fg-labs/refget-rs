@@ -12,6 +12,7 @@ name = "refget-tools"
 path = "src/main.rs"
 
 [dependencies]
+refget-client = { workspace = true, features = ["blocking"] }
 refget-digest = { workspace = true }
 refget-model = { workspace = true }
 refget-store = { workspace = true }
@@ -19,4 +20,5 @@ clap = { workspace = true }
 noodles-fasta = { workspace = true }
 md-5 = { workspace = true }
 sha2 = { workspace = true }
+serde_json = { workspace = true }
 anyhow = { workspace = true }

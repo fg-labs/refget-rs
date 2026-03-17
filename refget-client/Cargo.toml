@@ -1,0 +1,29 @@
+[package]
+name = "refget-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "HTTP client for GA4GH refget Sequences and Sequence Collections APIs"
+
+[features]
+default = ["blocking"]
+blocking = ["reqwest/blocking"]
+store = ["dep:refget-store", "blocking"]
+
+[dependencies]
+refget-model = { workspace = true }
+refget-store = { workspace = true, optional = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+axum = { workspace = true }
+refget-digest = { workspace = true }
+refget-server = { workspace = true }
+refget-store = { workspace = true }
+refget-model = { workspace = true }
+tokio = { workspace = true }
+md-5 = { workspace = true }

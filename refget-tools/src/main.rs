@@ -1,13 +1,18 @@
-//! CLI tool for computing refget digests from FASTA files.
+//! CLI tool for computing refget digests from FASTA files and fetching from refget servers.
 
+use std::io::Write;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use refget_client::RefgetClientBlocking;
 use refget_model::SeqCol;
 use refget_store::{DigestCache, FastaSequenceStore, collect_fasta_files};
 
 #[derive(Parser)]
-#[command(name = "refget-tools", about = "Compute GA4GH refget digests from FASTA files")]
+#[command(
+    name = "refget-tools",
+    about = "GA4GH refget digest computation, cache generation, and remote server queries"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -36,6 +41,31 @@ enum Commands {
         #[arg(required = true, num_args = 1..)]
         fasta: Vec<PathBuf>,
     },
+    /// Fetch a sequence from a remote refget server and print to stdout.
+    FetchSequence {
+        /// Base URL of the refget server (e.g. http://localhost:8080).
+        url: String,
+        /// Sequence digest (MD5 or ga4gh).
+        digest: String,
+        /// Start position (0-based, inclusive).
+        #[arg(long)]
+        start: Option<u64>,
+        /// End position (0-based, exclusive).
+        #[arg(long)]
+        end: Option<u64>,
+    },
+    /// Fetch sequence metadata from a remote refget server.
+    FetchMetadata {
+        /// Base URL of the refget server (e.g. http://localhost:8080).
+        url: String,
+        /// Sequence digest (MD5 or ga4gh).
+        digest: String,
+    },
+    /// Fetch service-info from a remote refget server.
+    FetchServiceInfo {
+        /// Base URL of the refget server (e.g. http://localhost:8080).
+        url: String,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -45,6 +75,11 @@ fn main() -> anyhow::Result<()> {
         Commands::DigestFasta { fasta } => digest_fasta(&fasta),
         Commands::DigestCollection { fasta } => digest_collection(&fasta),
         Commands::Cache { fasta } => cache_fastas(&fasta),
+        Commands::FetchSequence { url, digest, start, end } => {
+            fetch_sequence(&url, &digest, start, end)
+        }
+        Commands::FetchMetadata { url, digest } => fetch_metadata(&url, &digest),
+        Commands::FetchServiceInfo { url } => fetch_service_info(&url),
     }
 }
 
@@ -97,5 +132,46 @@ fn digest_collection(fasta_path: &PathBuf) -> anyhow::Result<()> {
         println!("  sorted_name_length_pairs:  {snlp}");
     }
 
+    Ok(())
+}
+
+fn fetch_sequence(
+    url: &str,
+    digest: &str,
+    start: Option<u64>,
+    end: Option<u64>,
+) -> anyhow::Result<()> {
+    let client = RefgetClientBlocking::new(url)?;
+    let seq = client.get_sequence(digest, start, end)?;
+
+    match seq {
+        Some(bytes) => {
+            std::io::stdout().write_all(&bytes)?;
+            // Add trailing newline if the output doesn't end with one
+            if !bytes.ends_with(b"\n") {
+                println!();
+            }
+        }
+        None => anyhow::bail!("Sequence not found: {digest}"),
+    }
+
+    Ok(())
+}
+
+fn fetch_metadata(url: &str, digest: &str) -> anyhow::Result<()> {
+    let client = RefgetClientBlocking::new(url)?;
+    match client.get_metadata(digest)? {
+        Some(meta) => {
+            println!("{}", serde_json::to_string_pretty(&meta)?);
+        }
+        None => anyhow::bail!("Sequence not found: {digest}"),
+    }
+    Ok(())
+}
+
+fn fetch_service_info(url: &str) -> anyhow::Result<()> {
+    let client = RefgetClientBlocking::new(url)?;
+    let info = client.get_sequence_service_info()?;
+    println!("{}", serde_json::to_string_pretty(&info)?);
     Ok(())
 }

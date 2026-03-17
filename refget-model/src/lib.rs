@@ -9,4 +9,4 @@ pub use seqcol::{
     compare,
 };
 pub use sequence::{Alias, SequenceMetadata};
-pub use service_info::{SequenceServiceInfo, ServiceInfo, ServiceType};
+pub use service_info::{RefgetServiceDetails, SequenceServiceInfo, ServiceInfo, ServiceType};
